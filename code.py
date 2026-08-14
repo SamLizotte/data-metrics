@@ -1,6 +1,6 @@
+import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-from datetime import datetime
 import numpy as np
 
 # importing and opening dataset, code is going to assume data is already in csv
@@ -114,7 +114,6 @@ plt.show()
 # prompt user to ask for a column to plot line chart
 print(f"Numeric columns available for line chart: {numeric_cols}")
 print("Choose a numeric column to plot a line chart from the list above.")
-# turn date strings into datetime objects
 line_col_2 = input("Enter the y column name (case-sensitive): ")
 # plot line chart
 df.plot(x=numeric_cols[0], y=line_col_2, xlabel=numeric_cols[0], ylabel=line_col_2, title=f"Line chart of {numeric_cols[0]} vs {line_col_2}", kind='line')
@@ -197,7 +196,6 @@ plt.show()
 # prompt user to ask for a column to plot line chart
 print(f"Numeric columns available for line chart: {numeric_cols_filt}")
 print("Choose a numeric column to plot a line chart from the list above.")
-# turn date strings into datetime objects
 line_col_2 = input("Enter the y column name (case-sensitive): ")
 # plot line chart
 df_filtered.plot(x=filt_col_title[1], y=line_col_2, xlabel=filt_col_title[1], ylabel=line_col_2, title=f"Line chart of {filt_col_title[1]} vs {line_col_2} by {channel_choose}", kind='line')
