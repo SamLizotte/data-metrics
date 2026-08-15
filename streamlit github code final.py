@@ -34,7 +34,7 @@ if uploaded_file:
 
     # First menu - choose column/group (optional)
     group = st.menu_button(
-        "What column/group do you want to sort by? (Optional)", 
+        "What column/group do you want to filter by? (Optional)", 
         ["None"] + col_titles  # Add "None" as first option
     )
 
