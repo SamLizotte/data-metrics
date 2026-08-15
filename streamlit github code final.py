@@ -299,6 +299,7 @@ if uploaded_file:
             st.error("No numeric columns available for plotting. Please check your data.")
 
     if "Line Chart" in graph_prompt:
+        
         # Convert to list if it's a pandas Index
         if isinstance(numeric_cols_filt, pd.Index):
             numeric_cols_list = numeric_cols_filt.tolist()
@@ -331,7 +332,7 @@ if uploaded_file:
         
         # Let user select y-value from numeric columns
         if numeric_cols_list:
-            line_col_2 = st.menu_button("Choose the y-value", numeric_cols_list, key="linee2")
+            line_col_2 = st.menu_button("Choose the y-value", numeric_cols_list, key="line2")
             
             if line_col_2 and x_col:
                 # Plot the chart
@@ -363,6 +364,7 @@ if uploaded_file:
                     pass
                 
                 st.pyplot(fig)
+
 
         
         if st.button("Don't use date as x-value"):
