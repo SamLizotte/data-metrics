@@ -300,147 +300,93 @@ if uploaded_file:
 
     if "Line Chart" in graph_prompt:
         
-        # Convert to list if it's a pandas Index
         if isinstance(numeric_cols_filt, pd.Index):
             numeric_cols_list = numeric_cols_filt.tolist()
         else:
             numeric_cols_list = list(numeric_cols_filt) if numeric_cols_filt else []
         
-        # Get all column titles
+        # Get ALL column titles (including date columns)
         col_titles = df_filtered.columns.tolist()
         
-        # Initialize session state for date column
-        if 'selected_date_col' not in st.session_state:
-            st.session_state.selected_date_col = None
+        # Toggle for date mode
+        use_date = st.toggle("Use date as x-axis", key="use_date_toggle")
         
-        # Button to use date as x-value
-        if st.button("Use date as x-value"):
-            date_col = st.menu_button("Select date column (optional)", col_titles)
-            if date_col:
-                st.session_state.selected_date_col = date_col
-                st.write(f"{date_col} is the selected date column.")
-                # Create x-axis options: date column + numeric columns
-                numeric_col_x = [date_col] + numeric_cols_list  # Fixed: date_col is a string, make it a list
-                st.write(f"Available x-axis options: {numeric_col_x}")
-        
-        # Use the selected date column as x-axis if available
-        if st.session_state.selected_date_col:
-            x_col = st.session_state.selected_date_col
+        # Select x-axis based on toggle
+        if use_date:
+            # Date mode - show ALL columns
+            x_col = st.selectbox("Select date column", col_titles, key="line_x_date")
+            st.info("Date mode: x-axis will be formatted as dates")
         else:
-            # Default to first column if no date selected
-            x_col = col_titles[0] if col_titles else None
+            # Numeric mode - show ONLY numeric columns
+            if numeric_cols_list:
+                x_col = st.selectbox("Select x-axis (numeric)", numeric_cols_list, key="line_x_numeric")
+            else:
+                x_col = None
+                st.warning("No numeric columns available for x-axis")
         
-        # Let user select y-value from numeric columns
+        # Select y-axis (always numeric)
         if numeric_cols_list:
-            line_col_2 = st.menu_button("Choose the y-value", numeric_cols_list, key="line2")
+            y_col = st.selectbox("Select y-axis", numeric_cols_list, key="line_y_select")
+        else:
+            y_col = None
+            st.warning("No numeric columns available for y-axis")
+        
+        # Plot if both selected
+        if x_col and y_col:
+            df_plot = df_filtered.copy()
             
-            if line_col_2 and x_col:
-                # Plot the chart
+            # Handle x-axis based on mode
+            if use_date:
+                # Date mode - convert to datetime
+                try:
+                    df_plot['date_axis'] = pd.to_datetime(df_plot[x_col])
+                    x_axis_column = 'date_axis'
+                    x_label = 'Date'
+                    is_date = True
+                except Exception as e:
+                    st.warning(f"Could not convert '{x_col}' to datetime. Using as-is. Error: {e}")
+                    x_axis_column = x_col
+                    x_label = x_col
+                    is_date = False
+            else:
+                # Numeric mode - use as-is
+                x_axis_column = x_col
+                x_label = x_col
+                is_date = False
+            
+            # Remove rows with missing values
+            df_plot = df_plot.dropna(subset=[x_axis_column, y_col])
+            
+            if len(df_plot) == 0:
+                st.error("No valid data after removing missing values.")
+            else:
+                # Sort by x-axis
+                df_sorted = df_plot.sort_values(by=x_axis_column)
+                
+                # Create plot
                 fig, ax = plt.subplots(figsize=(10, 6))
+                ax.plot(df_sorted[x_axis_column], df_sorted[y_col], 
+                        marker='o', linestyle='-', linewidth=2, markersize=6, color='blue')
                 
-                # Sort by x-value
-                df_sorted = df_filtered.sort_values(by=x_col)
+                # Set labels and title
+                ax.set_xlabel(x_label)
+                ax.set_ylabel(y_col)
                 
-                # Plot
-                ax.plot(
-                    df_sorted[x_col],
-                    df_sorted[line_col_2],
-                    marker='o',
-                    linestyle='-',
-                    linewidth=2,
-                    markersize=6,
-                    color='blue'
-                )
+                if is_date:
+                    ax.set_title(f"Line chart of {y_col} over time")
+                else:
+                    ax.set_title(f"Line chart of {y_col} vs {x_col}")
                 
-                ax.set_xlabel(x_col)
-                ax.set_ylabel(line_col_2)
-                ax.set_title(f"Line chart of {line_col_2} vs {x_col}")
                 ax.grid(True, alpha=0.3)
                 
-                # Try to format as dates
-                try:
-                    fig.autofmt_xdate(rotation=45)
-                except:
-                    pass
+                # Format dates if in date mode
+                if is_date:
+                    try:
+                        fig.autofmt_xdate(rotation=45)
+                    except:
+                        pass
                 
                 st.pyplot(fig)
-
-
-        
-        if st.button("Don't use date as x-value"):
-            # Initialize session state
-            if 'line_col_1' not in st.session_state:
-                # Check if list has elements before accessing
-                if len(numeric_cols_list) > 0:
-                    st.session_state.line_col_1 = numeric_cols_list[0]
-                else:
-                    st.session_state.line_col_1 = None
-                    st.error("No numeric columns available for plotting")
-
-            if 'line_col_2' not in st.session_state:
-                if len(numeric_cols_list) > 1:
-                    st.session_state.line_col_2 = numeric_cols_list[1]
-                elif len(numeric_cols_list) == 1:
-                    st.session_state.line_col_2 = numeric_cols_list[0]
-                else:
-                    st.session_state.line_col_2 = None
-
-            # Validate selections still exist in the current list
-            if st.session_state.line_col_1 not in numeric_cols_list and len(numeric_cols_list) > 0:
-                st.session_state.line_col_1 = numeric_cols_list[0]
-
-            if st.session_state.line_col_2 not in numeric_cols_list and len(numeric_cols_list) > 0:
-                st.session_state.line_col_2 = numeric_cols_list[0]
-
-            # Only show menus if there are columns to select
-            if len(numeric_cols_list) > 0:
-                # Prompt user to ask for a column to plot line chart
-                line_col_1 = st.menu_button("Choose the x-value", numeric_cols_list,key="line1")
-                
-                # Update session state
-                if line_col_1 is not None:
-                    st.session_state.line_col_1 = line_col_1
-
-                line_col_2 = st.menu_button("Choose the y-value", numeric_cols_list,key="line2")
-                
-                # Update session state
-                if line_col_2 is not None:
-                    st.session_state.line_col_2 = line_col_2
-
-                # Display current selection using session state
-                st.write(f"You've chosen {st.session_state.line_col_1} as your x-value and {st.session_state.line_col_2} as your y-value")
-
-                # Plot line chart
-                if st.session_state.line_col_1 and st.session_state.line_col_2:
-                    # Option 1: Using pandas plot
-                    fig, ax = plt.subplots(figsize=(10, 6))
-                    
-                    # Sort by x-value for cleaner line chart
-                    df_sorted = df_filtered.sort_values(by=st.session_state.line_col_1)
-                    
-                    # Plot the line
-                    ax.plot(
-                        df_sorted[st.session_state.line_col_1],
-                        df_sorted[st.session_state.line_col_2],
-                        marker='o',
-                        linestyle='-',
-                        linewidth=2,
-                        markersize=6,
-                        color='blue'
-                    )
-                    
-                    ax.set_xlabel(st.session_state.line_col_1)
-                    ax.set_ylabel(st.session_state.line_col_2)
-                    ax.set_title(f"Line chart of {st.session_state.line_col_2} vs {st.session_state.line_col_1}")
-                    ax.grid(True, alpha=0.3)
-                    
-                    st.pyplot(fig)
-                    
-                else:
-                    st.warning("Please select both x and y values")
-            else:
-                st.error("No numeric columns available for plotting")
-
 
     if "Correlation Matrix" in graph_prompt:
         # 1. Select numeric columns
