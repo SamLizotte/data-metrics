@@ -56,7 +56,7 @@ if uploaded_file:
         group_options = []
         st.info("No group selected - showing all data")
 
-    st.write("Optional sort by group:")
+    st.write("Optional filter by group:")
 
     # Second menu - only show if group is selected
     if st.session_state.group_column is not None and group_options:
